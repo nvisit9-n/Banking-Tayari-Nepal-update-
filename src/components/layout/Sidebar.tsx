@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Home, 
   BookOpen, 
@@ -32,6 +32,7 @@ import { useApp } from '../../context/AppContext';
 import { NavigationTab, QuizSubCategory } from '../../types';
 import { BrandLogo } from '../common/BrandLogo';
 import { SocialLinksBar } from '../common/SocialIcons';
+import { StorageService } from '../../services/storageService';
 import { isOwnerAdmin } from '../../utils/sanitizer';
 
 export const Sidebar: React.FC = () => {
@@ -45,6 +46,27 @@ export const Sidebar: React.FC = () => {
     quizSubCategory, 
     selectQuizSubCategory 
   } = useApp();
+
+  // Force immediate re-render when auth changes
+  const [, setForceUpdate] = useState(0);
+  useEffect(() => {
+    const handleAuthEvent = () => setForceUpdate(n => n + 1);
+    window.addEventListener('btn:profile-updated', handleAuthEvent);
+    window.addEventListener('btn:user-login', handleAuthEvent);
+    window.addEventListener('btn:logout', handleAuthEvent);
+    return () => {
+      window.removeEventListener('btn:profile-updated', handleAuthEvent);
+      window.removeEventListener('btn:user-login', handleAuthEvent);
+      window.removeEventListener('btn:logout', handleAuthEvent);
+    };
+  }, []);
+
+  // Check if current user is an owner admin (strictly nvisit9@gmail.com & ketohero412@gmail.com)
+  const isOwner = Boolean(
+    (user?.email && isOwnerAdmin(user.email)) || 
+    (typeof window !== 'undefined' && isOwnerAdmin(StorageService.getUserProfile()?.email))
+  );
+
   const [selectedInst, setSelectedInst] = useState<'NRB' | 'Commercial' | 'EPF'>('NRB');
   const [expandedPaper, setExpandedPaper] = useState<'paper-1' | 'paper-2' | null>('paper-1');
   const [expandedCommercialLevel, setExpandedCommercialLevel] = useState<'level-4-5' | 'level-6' | null>('level-4-5');
@@ -274,7 +296,7 @@ export const Sidebar: React.FC = () => {
           </nav>
 
           {/* Owner Exclusive Admin Panel Tab (Restricted strictly to nvisit9@gmail.com and ketohero412@gmail.com) */}
-          {Boolean(user && isOwnerAdmin(user.email)) && (
+          {isOwner && (
             <div className="mt-2.5 pt-2 border-t border-amber-200/60 dark:border-amber-900/40">
               <div className="px-2 py-1 flex items-center justify-between mb-1">
                 <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">

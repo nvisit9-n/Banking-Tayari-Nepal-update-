@@ -211,7 +211,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUser?: Us
   useEffect(() => {
     const unsubscribe = FirebaseAuthService.onAuthStateChanged((fbProfile) => {
       if (fbProfile && fbProfile.email && fbProfile.email.includes('@')) {
-        setUserState(fbProfile);
+        const cleanEmail = fbProfile.email.toLowerCase().trim();
+        const stored = StorageService.getUserProfile();
+        const isSame = stored && stored.email && stored.email.toLowerCase().trim() === cleanEmail;
+        const isOwner = isOwnerAdmin(cleanEmail);
+
+        const merged: UserProfile = sanitizeUserProfile({
+          ...(isSame ? stored : {}),
+          ...fbProfile,
+          email: cleanEmail,
+          isGuest: false,
+          isRegistered: true,
+          role: isOwner ? 'admin' : (fbProfile.role || (isSame ? stored.role : 'student')),
+          isPro: isOwner ? true : Boolean(fbProfile.isPro || (isSame && (stored.isPro || stored.isProUser))),
+          isProUser: isOwner ? true : Boolean(fbProfile.isProUser || (isSame && (stored.isPro || stored.isProUser))),
+          proStatus: isOwner ? 'active' : (fbProfile.proStatus || (isSame ? stored.proStatus : 'inactive')),
+          name: fbProfile.displayName || fbProfile.name || (isSame ? stored.name : 'विद्यार्थी'),
+          displayName: fbProfile.displayName || fbProfile.name || (isSame ? stored.displayName : fbProfile.name),
+          photoURL: fbProfile.photoURL || (isSame ? stored.photoURL : undefined),
+          avatarUrl: fbProfile.avatarUrl || (isSame ? stored.avatarUrl : undefined)
+        });
+
+        setUserState(merged);
+        StorageService.saveUserProfile(merged);
+        try {
+          const serialized = JSON.stringify(merged);
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('user', serialized);
+          localStorage.setItem('user_profile', serialized);
+          localStorage.setItem('btn_authenticated_user', serialized);
+        } catch {}
         setIsLoggedIn(true);
         setIsLoginModalOpen(false);
       } else {
@@ -235,6 +264,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUser?: Us
       const customEvt = e as CustomEvent<UserProfile>;
       if (customEvt.detail) {
         const sanitized = sanitizeUserProfile(customEvt.detail);
+        if (isOwnerAdmin(sanitized.email)) {
+          sanitized.role = 'admin';
+          sanitized.isPro = true;
+          sanitized.isProUser = true;
+          sanitized.proStatus = 'active';
+        }
         setUserState(sanitized);
         const loggedIn = Boolean(sanitized && !sanitized.isGuest && !!sanitized.email);
         setIsLoggedIn(loggedIn);
@@ -243,6 +278,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUser?: Us
         }
       } else {
         const u = StorageService.getUserProfile();
+        if (isOwnerAdmin(u?.email)) {
+          u.role = 'admin';
+          u.isPro = true;
+          u.isProUser = true;
+          u.proStatus = 'active';
+        }
         setUserState(u);
         const loggedIn = Boolean(u && !u.isGuest && !!u.email);
         setIsLoggedIn(loggedIn);
@@ -256,7 +297,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUser?: Us
       const customEvt = e as CustomEvent<UserProfile>;
       if (customEvt.detail) {
         const sanitized = sanitizeUserProfile(customEvt.detail);
+        if (isOwnerAdmin(sanitized.email)) {
+          sanitized.role = 'admin';
+          sanitized.isPro = true;
+          sanitized.isProUser = true;
+          sanitized.proStatus = 'active';
+        }
         setUserState(sanitized);
+        StorageService.saveUserProfile(sanitized);
         setIsLoggedIn(true);
         setIsLoginModalOpen(false);
       }
@@ -357,8 +405,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUser?: Us
       const path = window.location.pathname.toLowerCase().replace(/\/+$/, '');
       const hash = window.location.hash.toLowerCase();
 
+      const isOwner = Boolean(
+        (user?.email && isOwnerAdmin(user.email)) ||
+        (typeof window !== 'undefined' && isOwnerAdmin(StorageService.getUserProfile()?.email))
+      );
+
       if (path === '/admin' || path.startsWith('/admin/') || hash === '#admin' || hash.startsWith('#admin/')) {
-        const isOwner = isOwnerAdmin(user?.email);
         if (!isOwner) {
           // Immediately redirect unauthorized users to Home (/)
           window.history.replaceState(null, '', '/');
@@ -368,7 +420,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUser?: Us
           // Authorized owner email (nvisit9@gmail.com or ketohero412@gmail.com)
           setActiveTabState('admin');
         }
-      } else if (activeTab === 'admin' && !isOwnerAdmin(user?.email)) {
+      } else if (activeTab === 'admin' && !isOwner) {
         setActiveTabState('home');
         window.history.replaceState(null, '', '/');
       }
@@ -463,6 +515,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUser?: Us
 
   const setUser = (newUser: UserProfile) => {
     const sanitized = sanitizeUserProfile(newUser);
+    const isOwner = isOwnerAdmin(sanitized.email);
+    if (isOwner) {
+      sanitized.role = 'admin';
+      sanitized.isPro = true;
+      sanitized.isProUser = true;
+      sanitized.proStatus = 'active';
+    }
     setUserState(sanitized);
     StorageService.saveUserProfile(sanitized);
     const loggedIn = Boolean(sanitized && !sanitized.isGuest && !!sanitized.email);
@@ -471,10 +530,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialUser?: Us
       localStorage.setItem('isLoggedIn', loggedIn ? 'true' : 'false');
       localStorage.setItem('user', JSON.stringify(sanitized));
       localStorage.setItem('user_profile', JSON.stringify(sanitized));
+      localStorage.setItem('btn_authenticated_user', JSON.stringify(sanitized));
     } catch {}
     if (loggedIn) {
       setIsLoginModalOpen(false);
     }
+    window.dispatchEvent(new CustomEvent('btn:profile-updated', { detail: sanitized }));
+    window.dispatchEvent(new CustomEvent('btn:user-login', { detail: sanitized }));
     if (loggedIn && pendingCallback) {
       const cb = pendingCallback;
       setPendingCallback(null);

@@ -11,6 +11,8 @@ import {
 import { doc, setDoc, Firestore } from 'firebase/firestore';
 import { UserProfile } from '../types';
 import { app, auth, db } from '../firebase';
+import { StorageService } from './storageService';
+import { isOwnerAdmin } from '../utils/sanitizer';
 
 export class FirebaseAuthService {
   static getAuthInstance(): Auth {
@@ -91,8 +93,12 @@ export class FirebaseAuthService {
     const displayName = fbUser.displayName?.trim() || email.split('@')[0] || 'परीक्षार्थी';
     const photoURL = fbUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0B2046&color=fff&size=256`;
     const uid = fbUser.uid || `usr_${Date.now()}`;
+    const isOwner = isOwnerAdmin(email);
+    const existing = StorageService.getUserProfile();
+    const isSame = existing && (existing.email?.toLowerCase().trim() === email || existing.authUid === uid);
 
     const profile: UserProfile = {
+      ...(isSame ? existing : {}),
       id: uid,
       authUid: uid,
       authProvider: 'google',
@@ -102,23 +108,27 @@ export class FirebaseAuthService {
       email,
       photoURL,
       avatarUrl: photoURL,
-      phone: fbUser.phoneNumber || '',
-      province: 'बागमती प्रदेश',
-      district: 'काठमाडौं',
-      targetExam: 'नेपाल राष्ट्र बैंक - सहायक (तह ४)',
-      xp: 250,
-      level: 1,
-      streak: 1,
+      phone: fbUser.phoneNumber || (isSame ? existing?.phone : '') || '',
+      province: (isSame && existing?.province) ? existing.province : 'बागमती प्रदेश',
+      district: (isSame && existing?.district) ? existing.district : 'काठमाडौं',
+      targetExam: (isSame && existing?.targetExam) ? existing.targetExam : 'नेपाल राष्ट्र बैंक - सहायक (तह ४)',
+      xp: (isSame && existing?.xp) ? Math.max(existing.xp, 250) : 250,
+      level: (isSame && existing?.level) ? existing.level : 1,
+      streak: (isSame && existing?.streak) ? Math.max(existing.streak, 1) : 1,
       lastActiveDate: new Date().toISOString().split('T')[0],
-      registeredAt: new Date().toISOString(),
-      questionsSolved: 0,
-      quizzesCompleted: 0,
-      accuracy: 100,
-      rank: 'तह ४: नयाँ प्रतियोगी (Aspirant)',
+      registeredAt: (isSame && existing?.registeredAt) ? existing.registeredAt : new Date().toISOString(),
+      questionsSolved: (isSame && existing?.questionsSolved) ? existing.questionsSolved : 0,
+      quizzesCompleted: (isSame && existing?.quizzesCompleted) ? existing.quizzesCompleted : 0,
+      accuracy: (isSame && existing?.accuracy) ? existing.accuracy : 100,
+      rank: (isSame && existing?.rank) ? existing.rank : 'तह ४: नयाँ प्रतियोगी (Aspirant)',
       isRegistered: true,
       isGuest: false,
+      role: isOwner ? 'admin' : (isSame && existing?.role ? existing.role : 'student'),
+      isPro: isOwner ? true : (isSame ? Boolean(existing?.isPro || existing?.isProUser) : false),
+      isProUser: isOwner ? true : (isSame ? Boolean(existing?.isPro || existing?.isProUser) : false),
+      proStatus: isOwner ? 'active' : (isSame && existing?.proStatus ? existing.proStatus : 'inactive'),
       profileCompletion: 85,
-      hasReceivedCompletionBonus: false
+      hasReceivedCompletionBonus: (isSame && existing?.hasReceivedCompletionBonus) ? true : false
     };
 
     // Synchronize user profile directly to Firestore `users` collection in background
@@ -140,8 +150,12 @@ export class FirebaseAuthService {
     const displayName = fbUser.displayName?.trim() || cleanEmail.split('@')[0] || 'विद्यार्थी';
     const photoURL = fbUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0B2046&color=fff&size=256`;
     const uid = fbUser.uid;
+    const isOwner = isOwnerAdmin(cleanEmail);
+    const existing = StorageService.getUserProfile();
+    const isSame = existing && (existing.email?.toLowerCase().trim() === cleanEmail || existing.authUid === uid);
 
     const profile: UserProfile = {
+      ...(isSame ? existing : {}),
       id: uid,
       authUid: uid,
       authProvider: 'email',
@@ -151,23 +165,27 @@ export class FirebaseAuthService {
       email: cleanEmail,
       photoURL,
       avatarUrl: photoURL,
-      phone: fbUser.phoneNumber || '',
-      province: 'बागमती प्रदेश',
-      district: 'काठमाडौं',
-      targetExam: 'नेपाल राष्ट्र बैंक - सहायक (तह ४)',
-      xp: 150,
-      level: 1,
-      streak: 1,
+      phone: fbUser.phoneNumber || (isSame ? existing?.phone : '') || '',
+      province: (isSame && existing?.province) ? existing.province : 'बागमती प्रदेश',
+      district: (isSame && existing?.district) ? existing.district : 'काठमाडौं',
+      targetExam: (isSame && existing?.targetExam) ? existing.targetExam : 'नेपाल राष्ट्र बैंक - सहायक (तह ४)',
+      xp: (isSame && existing?.xp) ? Math.max(existing.xp, 150) : 150,
+      level: (isSame && existing?.level) ? existing.level : 1,
+      streak: (isSame && existing?.streak) ? Math.max(existing.streak, 1) : 1,
       lastActiveDate: new Date().toISOString().split('T')[0],
-      registeredAt: new Date().toISOString(),
-      questionsSolved: 0,
-      quizzesCompleted: 0,
-      accuracy: 100,
-      rank: 'तह ४: नयाँ प्रतियोगी (Aspirant)',
+      registeredAt: (isSame && existing?.registeredAt) ? existing.registeredAt : new Date().toISOString(),
+      questionsSolved: (isSame && existing?.questionsSolved) ? existing.questionsSolved : 0,
+      quizzesCompleted: (isSame && existing?.quizzesCompleted) ? existing.quizzesCompleted : 0,
+      accuracy: (isSame && existing?.accuracy) ? existing.accuracy : 100,
+      rank: (isSame && existing?.rank) ? existing.rank : 'तह ४: नयाँ प्रतियोगी (Aspirant)',
       isRegistered: true,
       isGuest: false,
+      role: isOwner ? 'admin' : (isSame && existing?.role ? existing.role : 'student'),
+      isPro: isOwner ? true : (isSame ? Boolean(existing?.isPro || existing?.isProUser) : false),
+      isProUser: isOwner ? true : (isSame ? Boolean(existing?.isPro || existing?.isProUser) : false),
+      proStatus: isOwner ? 'active' : (isSame && existing?.proStatus ? existing.proStatus : 'inactive'),
       profileCompletion: 70,
-      hasReceivedCompletionBonus: false
+      hasReceivedCompletionBonus: (isSame && existing?.hasReceivedCompletionBonus) ? true : false
     };
 
     // Synchronize to Firestore
@@ -188,6 +206,7 @@ export class FirebaseAuthService {
     const cleanName = name.trim() || cleanEmail.split('@')[0] || 'नयाँ परीक्षार्थी';
     const photoURL = `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=0B2046&color=fff&size=256`;
     const uid = fbUser.uid;
+    const isOwner = isOwnerAdmin(cleanEmail);
 
     const profile: UserProfile = {
       id: uid,
@@ -214,6 +233,10 @@ export class FirebaseAuthService {
       rank: 'तह ४: नयाँ प्रतियोगी (Aspirant)',
       isRegistered: true,
       isGuest: false,
+      role: isOwner ? 'admin' : 'student',
+      isPro: isOwner ? true : false,
+      isProUser: isOwner ? true : false,
+      proStatus: isOwner ? 'active' : 'inactive',
       profileCompletion: 80,
       hasReceivedCompletionBonus: false
     };
@@ -255,8 +278,12 @@ export class FirebaseAuthService {
         const displayName = fbUser.displayName?.trim() || cleanEmail.split('@')[0] || 'परीक्षार्थी';
         const photoURL = fbUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0B2046&color=fff&size=256`;
         const uid = fbUser.uid;
+        const isOwner = isOwnerAdmin(cleanEmail);
+        const existing = StorageService.getUserProfile();
+        const isSame = existing && (existing.email?.toLowerCase().trim() === cleanEmail || existing.authUid === uid);
 
         const profile: UserProfile = {
+          ...(isSame ? existing : {}),
           id: uid,
           authUid: uid,
           authProvider: (fbUser.providerData?.[0]?.providerId === 'google.com' ? 'google' : 'email') as any,
@@ -266,23 +293,27 @@ export class FirebaseAuthService {
           email: cleanEmail,
           photoURL,
           avatarUrl: photoURL,
-          phone: fbUser.phoneNumber || '',
-          province: 'बागमती प्रदेश',
-          district: 'काठमाडौं',
-          targetExam: 'नेपाल राष्ट्र बैंक - सहायक (तह ४)',
-          xp: 250,
-          level: 1,
-          streak: 1,
+          phone: fbUser.phoneNumber || (isSame ? existing?.phone : '') || '',
+          province: (isSame && existing?.province) ? existing.province : 'बागमती प्रदेश',
+          district: (isSame && existing?.district) ? existing.district : 'काठमाडौं',
+          targetExam: (isSame && existing?.targetExam) ? existing.targetExam : 'नेपाल राष्ट्र बैंक - सहायक (तह ४)',
+          xp: (isSame && existing?.xp) ? Math.max(existing.xp, 250) : 250,
+          level: (isSame && existing?.level) ? existing.level : 1,
+          streak: (isSame && existing?.streak) ? Math.max(existing.streak, 1) : 1,
           lastActiveDate: new Date().toISOString().split('T')[0],
-          registeredAt: new Date().toISOString(),
-          questionsSolved: 0,
-          quizzesCompleted: 0,
-          accuracy: 100,
-          rank: 'तह ४: नयाँ प्रतियोगी (Aspirant)',
+          registeredAt: (isSame && existing?.registeredAt) ? existing.registeredAt : new Date().toISOString(),
+          questionsSolved: (isSame && existing?.questionsSolved) ? existing.questionsSolved : 0,
+          quizzesCompleted: (isSame && existing?.quizzesCompleted) ? existing.quizzesCompleted : 0,
+          accuracy: (isSame && existing?.accuracy) ? existing.accuracy : 100,
+          rank: (isSame && existing?.rank) ? existing.rank : 'तह ४: नयाँ प्रतियोगी (Aspirant)',
           isRegistered: true,
           isGuest: false,
+          role: isOwner ? 'admin' : (isSame && existing?.role ? existing.role : 'student'),
+          isPro: isOwner ? true : (isSame ? Boolean(existing?.isPro || existing?.isProUser) : false),
+          isProUser: isOwner ? true : (isSame ? Boolean(existing?.isPro || existing?.isProUser) : false),
+          proStatus: isOwner ? 'active' : (isSame && existing?.proStatus ? existing.proStatus : 'inactive'),
           profileCompletion: 85,
-          hasReceivedCompletionBonus: false
+          hasReceivedCompletionBonus: (isSame && existing?.hasReceivedCompletionBonus) ? true : false
         };
 
         callback(profile);

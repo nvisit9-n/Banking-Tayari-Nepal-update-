@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 import { 
   Mail, 
   ArrowRight, 
@@ -22,6 +23,7 @@ import { StorageService } from '../../services/storageService';
 import { FirebaseAuthService } from '../../services/firebaseAuthService';
 import { ActivityTrackingService } from '../../services/activityTrackingService';
 import { useApp } from '../../context/AppContext';
+import { isOwnerAdmin, sanitizeUserProfile } from '../../utils/sanitizer';
 
 export interface LoginModalProps {
   isOpen?: boolean;
@@ -71,6 +73,77 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   useEffect(() => {
     setIsVisible(isOpen);
   }, [isOpen]);
+
+  /**
+   * 1. AUTO-CLOSE LOGIN MODAL ON SUCCESS:
+   * Listen to Firebase onAuthStateChanged. As soon as user is detected / logged in successfully,
+   * automatically set isModalOpen = false and trigger modal close functions immediately.
+   */
+  useEffect(() => {
+    const authInst = FirebaseAuthService.getAuthInstance();
+    if (!authInst) return;
+
+    const unsubscribe = onAuthStateChanged(authInst, (fbUser) => {
+      if (fbUser && fbUser.email) {
+        setIsVisible(false);
+        setIsSigningIn(false);
+        if (externalSetShowAuthModal) externalSetShowAuthModal(false);
+        if (onClose) onClose();
+        closeLoginModal();
+        setIsLoginModalOpen(false);
+
+        const cleanEmail = fbUser.email.toLowerCase().trim();
+        const displayName = fbUser.displayName?.trim() || cleanEmail.split('@')[0] || 'विद्यार्थी';
+        const photoURL = fbUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0052FF&color=fff&size=256`;
+        const uid = fbUser.uid;
+        const isOwner = isOwnerAdmin(cleanEmail);
+
+        const existing = StorageService.getUserProfile();
+        const isSame = existing && (existing.email?.toLowerCase().trim() === cleanEmail || existing.authUid === uid);
+
+        const enrichedProfile: UserProfile = sanitizeUserProfile({
+          ...(isSame ? existing : {}),
+          id: uid,
+          authUid: uid,
+          authProvider: (fbUser.providerData?.[0]?.providerId === 'google.com' ? 'google' : 'email') as any,
+          isGoogleUser: fbUser.providerData?.[0]?.providerId === 'google.com',
+          name: displayName,
+          displayName,
+          email: cleanEmail,
+          photoURL,
+          avatarUrl: photoURL,
+          isGuest: false,
+          isRegistered: true,
+          role: isOwner ? 'admin' : (isSame && existing?.role ? existing.role : 'student'),
+          isPro: isOwner ? true : Boolean(existing?.isPro || existing?.isProUser),
+          isProUser: isOwner ? true : Boolean(existing?.isPro || existing?.isProUser),
+          proStatus: isOwner ? 'active' : (isSame && existing?.proStatus ? existing.proStatus : 'inactive')
+        });
+
+        StorageService.saveUserProfile(enrichedProfile);
+        try {
+          const serialized = JSON.stringify(enrichedProfile);
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('user', serialized);
+          localStorage.setItem('user_profile', serialized);
+          localStorage.setItem('btn_authenticated_user', serialized);
+          localStorage.setItem('btn_last_auth_email', cleanEmail);
+          localStorage.setItem('btn_last_auth_name', displayName);
+        } catch {}
+
+        if (setUser) setUser(enrichedProfile);
+        if (appSetUser) appSetUser(enrichedProfile);
+        if (setIsLoggedIn) setIsLoggedIn(true);
+        if (appSetIsLoggedIn) appSetIsLoggedIn(true);
+        if (onSuccess) onSuccess(enrichedProfile);
+
+        window.dispatchEvent(new CustomEvent('btn:profile-updated', { detail: enrichedProfile }));
+        window.dispatchEvent(new CustomEvent('btn:user-login', { detail: enrichedProfile }));
+      }
+    });
+
+    return () => unsubscribe();
+  }, [externalSetShowAuthModal, onClose, closeLoginModal, setIsLoginModalOpen, setUser, appSetUser, setIsLoggedIn, appSetIsLoggedIn, onSuccess]);
 
   /**
    * Helper to ensure auth modal is closed immediately across all states and props
@@ -155,16 +228,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       const derivedName = profileData.displayName || profileData.name || (profileData.email ? profileData.email.split('@')[0] : 'विद्यार्थी');
       const authenticAvatar = profileData.photoURL || profileData.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(derivedName)}&background=0052FF&color=fff&size=256`;
 
-      const enrichedProfile: UserProfile = {
+      const cleanEmail = (profileData.email || '').toLowerCase().trim();
+      const isOwner = isOwnerAdmin(cleanEmail);
+
+      const enrichedProfile: UserProfile = sanitizeUserProfile({
         ...profileData,
+        email: cleanEmail,
         displayName: derivedName,
         name: derivedName,
         photoURL: authenticAvatar,
         avatarUrl: authenticAvatar,
         sessionToken,
         isGuest: false,
-        isRegistered: true
-      };
+        isRegistered: true,
+        role: isOwner ? 'admin' : (profileData.role || 'student'),
+        isPro: isOwner ? true : Boolean(profileData.isPro || profileData.isProUser),
+        isProUser: isOwner ? true : Boolean(profileData.isPro || profileData.isProUser),
+        proStatus: isOwner ? 'active' : (profileData.proStatus || 'inactive')
+      });
 
       // 1. React App State Updates: Immediately update global auth state (setUser, isLoggedIn)
       // This immediately reflects DisplayName and Google Profile Photo on the header

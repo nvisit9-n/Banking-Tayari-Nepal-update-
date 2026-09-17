@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   Bell, 
@@ -32,6 +32,7 @@ import { useApp } from '../../context/AppContext';
 import { isUserAdmin, OFFICIAL_ADMIN_EMAIL } from '../../utils/sanitizer';
 import { NavigationTab } from '../../types';
 import { DbService } from '../../services/dbService';
+import { StorageService } from '../../services/storageService';
 
 // =========================================================================
 // Official Banking Tayari Nepal Inline SVG Component
@@ -176,8 +177,25 @@ export const Header: React.FC = () => {
 
   const isGuest = !user?.email || Boolean(user?.isGuest);
 
+  // Force immediate re-render when auth changes so admin button and user profile update instantly
+  const [, setForceUpdate] = useState(0);
+  useEffect(() => {
+    const handleAuthEvent = () => setForceUpdate(n => n + 1);
+    window.addEventListener('btn:profile-updated', handleAuthEvent);
+    window.addEventListener('btn:user-login', handleAuthEvent);
+    window.addEventListener('btn:logout', handleAuthEvent);
+    return () => {
+      window.removeEventListener('btn:profile-updated', handleAuthEvent);
+      window.removeEventListener('btn:user-login', handleAuthEvent);
+      window.removeEventListener('btn:logout', handleAuthEvent);
+    };
+  }, []);
+
   // Visibility logic for the Admin button: ONLY when the authorized admin is logged in
-  const isAdmin = Boolean(user && isUserAdmin(user.email));
+  const isAdmin = Boolean(
+    (user?.email && isUserAdmin(user.email)) ||
+    (typeof window !== 'undefined' && isUserAdmin(StorageService.getUserProfile()?.email))
+  );
   const isPro = DbService.isUserPro(user);
 
   const unreadCount = typeof unreadNotificationsCount === 'number' 

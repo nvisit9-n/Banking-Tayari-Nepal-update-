@@ -512,7 +512,7 @@ app.post("/api/ai-assistant-stream", async (req, res) => {
   const ai = getGeminiClient();
 
   if (ai) {
-    const candidateModels = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+    const candidateModels = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
     const contents = buildGeminiContents(cleanQuery, history, activeAttachment);
 
     for (const modelName of candidateModels) {
@@ -543,8 +543,9 @@ app.post("/api/ai-assistant-stream", async (req, res) => {
           return res.end();
         }
       } catch (geminiErr: any) {
-        console.warn(`Gemini streaming attempt with ${modelName} error:`, geminiErr?.message || geminiErr);
-        // Continue to next candidate model
+        const statusCode = geminiErr?.status || geminiErr?.code || 503;
+        console.log(`[AI Assistant Notice] Model ${modelName} temporary load status (${statusCode}), switching to next model...`);
+        // Continue seamlessly to next candidate model
       }
     }
   }
@@ -576,7 +577,7 @@ app.post("/api/ai-assistant", async (req, res) => {
     const ai = getGeminiClient();
 
     if (ai) {
-      const candidateModels = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+      const candidateModels = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
       const contents = buildGeminiContents(cleanQuery, history, activeAttachment);
 
       for (const modelName of candidateModels) {
@@ -600,7 +601,8 @@ app.post("/api/ai-assistant", async (req, res) => {
             });
           }
         } catch (geminiErr: any) {
-          console.warn(`Gemini AI Assistant response fallback for ${modelName}:`, geminiErr?.message || geminiErr);
+          const statusCode = geminiErr?.status || geminiErr?.code || 503;
+          console.log(`[AI Assistant Notice] Model ${modelName} temporary load status (${statusCode}), switching to next model...`);
         }
       }
     }

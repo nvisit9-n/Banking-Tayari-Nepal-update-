@@ -376,7 +376,7 @@ export const AiAssistantModal: React.FC = () => {
     if ((!streamedAny || !accumulatedText.trim()) && apiKey) {
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const candidateModels = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+        const candidateModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
         const SYSTEM_INSTRUCTION = `तपाईं नेपालको लोकसेवा आयोग तथा बैंकिङ परीक्षा (NRB, RBB, NBL, ADBL) का वरिष्ठ परीक्षा परीक्षक तथा टपर मेन्टर हुनुहुन्छ। उत्तर सधैं अनिवार्य ५-तह ढाँचामा (क. परिचय, ख. कानुनी व्यवस्था, ग. मुख्य विषयवस्तु/कार्य, घ. नेपालको विद्यमान अवस्था र चुनौतीहरू, ङ. सुझाव, नमुना निष्कर्ष र 📌 टपर परीक्षा टिप) प्राज्ञिक, तथ्यपरक र उच्च-अंक प्राप्त हुने गरी दिनुहोस्।`;
 
