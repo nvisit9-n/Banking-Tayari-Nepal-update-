@@ -40,17 +40,7 @@ export const AiAssistantModal: React.FC = () => {
     {
       id: 'msg-1',
       sender: 'ai',
-      text: `नमस्ते! म तपाईंको **"वरिष्ठ लोकसेवा तथा बैंकिङ परीक्षा परीक्षक र टपर मेन्टर"** (Senior Lok Sewa & Banking Exam Evaluator / Topper Mentor) हुँ।
-
-म तपाईंलाई नेपाल राष्ट्र बैंक (NRB), राष्ट्रिय वाणिज्य बैंक (RBB), कृषि विकास बैंक (ADBL), नेपाल बैंक (NBL) तथा निजामती सेवाका परीक्षार्थीहरूलाई प्रथम पत्र (MCQ) तथा द्वितीय पत्र (विषयगत) मा उच्चतम अंक प्राप्त हुने **मानक ५-तह संरचना (5-Tier Lok Sewa Structure)** मा आधिकारिक समाधान प्रदान गर्दछु:
-
-क) **परिचय र पृष्ठभूमि** (Concept & Background)
-ख) **संवैधानिक तथा कानुनी व्यवस्था** (Constitution & Relevant Acts/Directives)
-ग) **मुख्य विषयवस्तु, कार्य र कर्तव्य** (Core Functions, Features & Math Solutions)
-घ) **नेपालको विद्यमान अवस्था र समस्या/चुनौतीहरू** (Current State & Challenges in Nepal)
-ङ) **सुधारका सुझाव र नमुना निष्कर्ष** (Recommendations & Model Conclusion) साथमा 📌 **टपर परीक्षा टिप (Topper's Exam Tip)**
-
-🎙️ **आवाज (Mic)** बाट नेपालीमा सिधै बोल्न सक्नुहुन्छ, 📄 **PDF दस्तावेज** (ऐन, पाठ्यक्रम, निर्देशिका) वा 📷 **तस्बिर** अपलोड गरी सुक्ष्म विश्लेषण लिन सक्नुहुन्छ!`
+      text: 'नमस्ते! म तपाईँको AI अध्ययन साथी हुन्। कुनै पनि प्रश्न सोध्नुहोस्, नोट/PDF Upload गर्नुहोस् वा बोलेर (Mic) सोध्नुहोस्।'
     }
   ]);
   const [inputQuery, setInputQuery] = useState('');
@@ -93,12 +83,12 @@ export const AiAssistantModal: React.FC = () => {
   if (!isAiModalOpen) return null;
 
   const samplePrompts = [
-    '🎯 ५-तह ढाँचामा उत्तर (Subjective Topper Format)',
     '📜 नेपाल राष्ट्र बैंक ऐन २०५८ (दफा ४ र ५ विश्लेषण)',
     '🏦 BAFIA २०७३ अनुसार बैंक वर्गीकरण र चुक्ता पूँजी',
     '🛡️ सम्पत्ति शुद्धीकरण (AML/CFT) र CTR/STR दायित्व',
     '📈 मौद्रिक नीतिका मुख्य उपकरणहरू (CRR, SLR, Repo)',
     '💼 सार्वजनिक व्यवस्थापनमा HRM र सुशासन',
+    '📝 विषयगत उत्तर लेखन शैली र परीक्षा टिप्स',
     '🧮 बैंकिङ हिसाब तथा लेखा (BRS, NPL, Accounting)'
   ];
 
@@ -225,8 +215,8 @@ export const AiAssistantModal: React.FC = () => {
     let queryToSend = trimmed;
     if (!queryToSend && currentFile) {
       queryToSend = currentFile.type === 'pdf'
-        ? `कृपया संलग्न PDF दस्तावेज (${currentFile.name}) को गहिरो अध्ययन गरी ५-तह लोकसेवा ढाँचामा उच्च-अंक दिलाउने आधिकारिक विश्लेषण प्रस्तुत गर्नुहोस्।`
-        : 'कृपया संलग्न तस्बिरमा भएको बैंकिङ/लोकसेवा प्रश्न वा टिपोट ध्यानपूर्वक पढी ५-तह ढाँचामा पूर्ण समाधान दिनुहोस्।';
+        ? `कृपया संलग्न PDF दस्तावेज (${currentFile.name}) को अध्ययन गरी यसको मुख्य सार तथा महत्वपूर्ण विषयवस्तुहरू प्रस्तुत गर्नुहोस्।`
+        : 'कृपया संलग्न तस्बिरमा भएको विषयवस्तु ध्यानपूर्वक पढी स्पष्ट विश्लेषण वा समाधान दिनुहोस्।';
     }
 
     const userMsg: ChatMessage = {
@@ -378,9 +368,9 @@ export const AiAssistantModal: React.FC = () => {
         const genAI = new GoogleGenerativeAI(apiKey);
         const candidateModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
-        const SYSTEM_INSTRUCTION = `तपाईं नेपालको लोकसेवा आयोग तथा बैंकिङ परीक्षा (NRB, RBB, NBL, ADBL) का वरिष्ठ परीक्षा परीक्षक तथा टपर मेन्टर हुनुहुन्छ। उत्तर सधैं अनिवार्य ५-तह ढाँचामा (क. परिचय, ख. कानुनी व्यवस्था, ग. मुख्य विषयवस्तु/कार्य, घ. नेपालको विद्यमान अवस्था र चुनौतीहरू, ङ. सुझाव, नमुना निष्कर्ष र 📌 टपर परीक्षा टिप) प्राज्ञिक, तथ्यपरक र उच्च-अंक प्राप्त हुने गरी दिनुहोस्।`;
+        const SYSTEM_INSTRUCTION = `तपाईं नेपालको बैंकिङ तथा लोकसेवा परीक्षाको लागि अत्यन्तै स्मार्ट, सहयोगी र गतिशील AI अध्ययन साथी हुनुहुन्छ। सामान्य प्रश्नमा प्राकृतिक र मैत्रीपूर्ण तरिकाले कुराकानी गर्नुहोस्। परीक्षा तथा पाठ्यक्रमका विषयमा स्पष्ट हेडिङ, बुँदा, कानुनी दफा र गहिरो विश्लेषणसहित उत्तर दिनुहोस्। कुनै कडा वा अनावश्यक ढाँचा उल्लेख नगर्नुहोस्।`;
 
-        const fullPrompt = `${SYSTEM_INSTRUCTION}\n\nप्रयोगकर्ताको प्रश्न वा विश्लेषणको विषय:\n"${queryToSend}"`;
+        const fullPrompt = `${SYSTEM_INSTRUCTION}\n\nप्रयोगकर्ताको प्रश्न:\n"${queryToSend}"`;
         const contentParts: any[] = [fullPrompt];
 
         if (currentFile && currentFile.base64) {
@@ -475,17 +465,17 @@ export const AiAssistantModal: React.FC = () => {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <h2 className="font-black text-slate-900 dark:text-white text-sm sm:text-lg truncate">
-                  लोकसेवा टपर मेन्टर (Lok Sewa Topper Assistant)
+                  AI अध्ययन साथी (AI Study Assistant)
                 </h2>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[9px] sm:text-[10px] font-bold shrink-0">
-                  ५-तह मानक ढाँचा
+                  Smart AI
                 </span>
                 <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[9px] sm:text-[10px] font-bold shrink-0 hidden xs:inline">
-                  Multimodal AI
+                  Multimodal
                 </span>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
-                NRB, RBB, NBL, ADBL र निजामती परीक्षाको लागि आधिकारिक ५-तह ढाँचामा समाधान
+                नेपालको बैंकिङ तथा लोकसेवा परीक्षाको लागि गतिशील र गहिरो अध्ययन सहायता
               </p>
             </div>
           </div>
@@ -586,7 +576,7 @@ export const AiAssistantModal: React.FC = () => {
           {isTyping && (
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 p-2">
               <Sparkles className="w-4 h-4 animate-spin text-amber-500" />
-              <span className="font-medium">वरिष्ठ टपर मेन्टरले ५-तह मानक ढाँचामा उत्तर तयार गर्दैछ...</span>
+              <span className="font-medium">AI अध्ययन साथीले उत्तर तयार गर्दैछ...</span>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -711,7 +701,7 @@ export const AiAssistantModal: React.FC = () => {
             placeholder={
               attachedFile
                 ? (attachedFile.type === 'pdf'
-                    ? 'यस PDF दस्तावेजबाट के विश्लेषण गर्न चाहनुहुन्छ? (खाली छाडे पूर्ण ५-तह विश्लेषण)'
+                    ? 'यस PDF दस्तावेजबाट के बुझ्न चाहनुहुन्छ? (खाली छाडे मुख्य सार र विश्लेषण)'
                     : 'यस तस्बिर सम्बन्धी कुनै विशेष निर्देशन वा प्रश्न लेख्नुहोस्...')
                 : 'आफ्नो प्रश्न यहाँ सोध्नुहोस् वा बोल्नुहोस् (Mic)...'
             }
