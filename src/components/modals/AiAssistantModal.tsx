@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, X, Send, Bot, CheckSquare, Copy, Check, Paperclip } from 'lucide-react';
+import { Sparkles, X, Send, Bot, CheckSquare, Copy, Check, Paperclip, Mic, MicOff, FileText, FileCheck } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { useApp } from '../../context/AppContext';
 import { QuizSet } from '../../types';
@@ -12,15 +12,27 @@ interface ChatMessage {
   sender: 'ai' | 'user';
   text: string;
   image?: string;
+  pdfAttachment?: {
+    name: string;
+    sizeBytes: number;
+  };
   suggestedTopic?: string;
 }
 
-interface AttachedImage {
+interface AttachedFile {
+  type: 'image' | 'pdf';
   base64: string;
   mimeType: string;
-  previewUrl: string;
   name: string;
+  sizeBytes: number;
+  previewUrl?: string;
 }
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 export const AiAssistantModal: React.FC = () => {
   const { isAiModalOpen, setIsAiModalOpen, startQuiz } = useApp();
@@ -28,17 +40,29 @@ export const AiAssistantModal: React.FC = () => {
     {
       id: 'msg-1',
       sender: 'ai',
-      text: `नमस्ते! म तपाईंको "Banking Tayari Nepal AI साथी" (Gemini AI) हुँ। 
+      text: `नमस्ते! म तपाईंको **"वरिष्ठ लोकसेवा तथा बैंकिङ परीक्षा परीक्षक र टपर मेन्टर"** (Senior Lok Sewa & Banking Exam Evaluator / Topper Mentor) हुँ।
 
-म तपाईंलाई नेपाल राष्ट्र बैंक, वाणिज्य बैंकहरू (RBB, NBL, ADBL) र लोकसेवा आयोगका प्रथम तथा द्वितीय पत्रका विषयहरूमा तत्काल व्याख्या, कानुनका दफाहरू, गणितीय हिसाब तथा परीक्षा उपयोगी बुँदाहरू प्रदान गर्न सक्छु।
+म तपाईंलाई नेपाल राष्ट्र बैंक (NRB), राष्ट्रिय वाणिज्य बैंक (RBB), कृषि विकास बैंक (ADBL), नेपाल बैंक (NBL) तथा निजामती सेवाका परीक्षार्थीहरूलाई प्रथम पत्र (MCQ) तथा द्वितीय पत्र (विषयगत) मा उच्चतम अंक प्राप्त हुने **मानक ५-तह संरचना (5-Tier Lok Sewa Structure)** मा आधिकारिक समाधान प्रदान गर्दछु:
 
-कुनै पनि प्रश्न सोध्नुहोस्, फोटो/नोट संलग्न गर्नुहोस् वा तलका द्रुत विषयहरूमा थिच्नुहोस्!`
+क) **परिचय र पृष्ठभूमि** (Concept & Background)
+ख) **संवैधानिक तथा कानुनी व्यवस्था** (Constitution & Relevant Acts/Directives)
+ग) **मुख्य विषयवस्तु, कार्य र कर्तव्य** (Core Functions, Features & Math Solutions)
+घ) **नेपालको विद्यमान अवस्था र समस्या/चुनौतीहरू** (Current State & Challenges in Nepal)
+ङ) **सुधारका सुझाव र नमुना निष्कर्ष** (Recommendations & Model Conclusion) साथमा 📌 **टपर परीक्षा टिप (Topper's Exam Tip)**
+
+🎙️ **आवाज (Mic)** बाट नेपालीमा सिधै बोल्न सक्नुहुन्छ, 📄 **PDF दस्तावेज** (ऐन, पाठ्यक्रम, निर्देशिका) वा 📷 **तस्बिर** अपलोड गरी सुक्ष्म विश्लेषण लिन सक्नुहुन्छ!`
     }
   ]);
   const [inputQuery, setInputQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [attachedImage, setAttachedImage] = useState<AttachedImage | null>(null);
+  const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null);
+
+  // Web Speech API states
+  const [isListening, setIsListening] = useState(false);
+  const [speechLanguage, setSpeechLanguage] = useState<'ne-NP' | 'en-US'>('ne-NP');
+  const [speechNotice, setSpeechNotice] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -53,46 +77,135 @@ export const AiAssistantModal: React.FC = () => {
     }
   }, [messages, isTyping, isAiModalOpen]);
 
+  // Clean up speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
   if (!isAiModalOpen) return null;
 
   const samplePrompts = [
-    'BAFIA २०७३ अनुसार बैंकहरूको वर्गीकरण र चुक्ता पूँजी',
-    'नेपाल राष्ट्र बैंक ऐन २०५८ का प्रमुख उद्देश्य र कामहरू',
-    'सम्पत्ति शुद्धीकरण (AML/CFT) मा बैंकहरूको दायित्व र CTR/STR',
-    'मौद्रिक नीतिका मुख्य उपकरणहरू (CRR, SLR, CD Ratio)',
-    'सार्वजनिक व्यवस्थापनमा HRM र उत्प्रेरणाको महत्व',
-    'नेपाली अर्थतन्त्रमा रेमिट्यान्सको प्रभाव र चुनौतीहरू'
+    '🎯 ५-तह ढाँचामा उत्तर (Subjective Topper Format)',
+    '📜 नेपाल राष्ट्र बैंक ऐन २०५८ (दफा ४ र ५ विश्लेषण)',
+    '🏦 BAFIA २०७३ अनुसार बैंक वर्गीकरण र चुक्ता पूँजी',
+    '🛡️ सम्पत्ति शुद्धीकरण (AML/CFT) र CTR/STR दायित्व',
+    '📈 मौद्रिक नीतिका मुख्य उपकरणहरू (CRR, SLR, Repo)',
+    '💼 सार्वजनिक व्यवस्थापनमा HRM र सुशासन',
+    '🧮 बैंकिङ हिसाब तथा लेखा (BRS, NPL, Accounting)'
   ];
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert('कृपया तस्बिर (JPG, PNG वा WebP) मात्र अपलोड गर्नुहोस्।');
+  // Voice recognition handler
+  const handleToggleSpeech = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechNotice('तपाईंको ब्राउजरमा Speech Recognition समर्थित छैन। कृपया Chrome वा Edge प्रयोग गर्नुहोस्।');
+      setTimeout(() => setSpeechNotice(null), 4000);
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      alert('तस्बिरको आकार १५ MB भन्दा सानो हुनुपर्दछ।');
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = speechLanguage;
+      recognition.continuous = false;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setSpeechNotice(speechLanguage === 'ne-NP' ? '🔴 आवाज सुन्दैछ... बोल्नुहोस् (नेपाली)' : '🔴 Listening... speak now (English)');
+      };
+
+      recognition.onresult = (event: any) => {
+        let interimText = '';
+        let finalText = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalText += event.results[i][0].transcript;
+          } else {
+            interimText += event.results[i][0].transcript;
+          }
+        }
+        const spoken = (finalText || interimText).trim();
+        if (spoken) {
+          setInputQuery(prev => {
+            const trimmed = prev.trim();
+            if (!trimmed) return spoken;
+            return `${trimmed} ${spoken}`;
+          });
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition notice:', event?.error);
+        setIsListening(false);
+        setSpeechNotice(null);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        setTimeout(() => setSpeechNotice(null), 1500);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn('Could not start speech recognition:', err);
+      setIsListening(false);
+      setSpeechNotice(null);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/');
+
+    if (!isPdf && !isImage) {
+      alert('कृपया PDF दस्तावेज (.pdf) वा तस्बिर (JPG, PNG, WebP) मात्र अपलोड गर्नुहोस्।');
+      return;
+    }
+
+    // PDF up to 25MB, Images up to 15MB
+    const maxBytes = isPdf ? 25 * 1024 * 1024 : 15 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      alert(`फाइलको आकार धेरै ठूलो छ (${formatFileSize(file.size)})। कृपया ${isPdf ? '२५ MB' : '१५ MB'} भन्दा सानो फाइल छान्नुहोस्।`);
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
-      setAttachedImage({
+      setAttachedFile({
+        type: isPdf ? 'pdf' : 'image',
         base64: dataUrl,
-        mimeType: file.type || 'image/jpeg',
-        previewUrl: dataUrl,
-        name: file.name
+        mimeType: isPdf ? 'application/pdf' : (file.type || 'image/jpeg'),
+        previewUrl: isImage ? dataUrl : undefined,
+        name: file.name,
+        sizeBytes: file.size
       });
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRemoveImage = () => {
-    setAttachedImage(null);
+  const handleRemoveFile = () => {
+    setAttachedFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -100,16 +213,31 @@ export const AiAssistantModal: React.FC = () => {
 
   const handleSendPrompt = async (promptText: string) => {
     const trimmed = promptText.trim();
-    if ((!trimmed && !attachedImage) || isTyping) return;
+    if ((!trimmed && !attachedFile) || isTyping) return;
 
-    const currentImage = attachedImage;
-    const queryToSend = trimmed || (currentImage ? 'कृपया संलग्न तस्बिरमा भएको प्रश्न वा टिपोट पढी विस्तृत, शुद्ध र बुँदागत समाधान वा व्याख्या नेपालीमा दिनुहोस्।' : '');
+    // Stop listening if active
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+
+    const currentFile = attachedFile;
+    let queryToSend = trimmed;
+    if (!queryToSend && currentFile) {
+      queryToSend = currentFile.type === 'pdf'
+        ? `कृपया संलग्न PDF दस्तावेज (${currentFile.name}) को गहिरो अध्ययन गरी ५-तह लोकसेवा ढाँचामा उच्च-अंक दिलाउने आधिकारिक विश्लेषण प्रस्तुत गर्नुहोस्।`
+        : 'कृपया संलग्न तस्बिरमा भएको बैंकिङ/लोकसेवा प्रश्न वा टिपोट ध्यानपूर्वक पढी ५-तह ढाँचामा पूर्ण समाधान दिनुहोस्।';
+    }
 
     const userMsg: ChatMessage = {
       id: `usr-${Date.now()}`,
       sender: 'user',
       text: queryToSend,
-      image: currentImage?.previewUrl
+      image: currentFile?.type === 'image' ? currentFile.previewUrl : undefined,
+      pdfAttachment: currentFile?.type === 'pdf' ? {
+        name: currentFile.name,
+        sizeBytes: currentFile.sizeBytes
+      } : undefined
     };
 
     const aiMsgId = `ai-${Date.now()}`;
@@ -119,7 +247,7 @@ export const AiAssistantModal: React.FC = () => {
       text: ''
     };
 
-    // Prepare history of recent messages for multi-turn context (excluding initial greeting)
+    // Multi-turn recent messages for exam context
     const chatHistory = messages
       .filter(m => m.id !== 'msg-1' && m.text && m.text.trim())
       .slice(-8)
@@ -127,7 +255,7 @@ export const AiAssistantModal: React.FC = () => {
 
     setMessages(prev => [...prev, userMsg, initialAiMsg]);
     setInputQuery('');
-    setAttachedImage(null);
+    setAttachedFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -137,10 +265,10 @@ export const AiAssistantModal: React.FC = () => {
     let accumulatedText = '';
 
     // Primary: Call the server-side streaming API route (/api/ai-assistant-stream)
-    // Keeps API keys protected on the server and uses modern gemini-3.8-flash
+    // Runs gemini-3.8-flash with temperature 0.3, maxOutputTokens 4096, and 5-tier Lok Sewa Topper instructions
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000);
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
       const response = await fetch('/api/ai-assistant-stream', {
         method: 'POST',
@@ -148,7 +276,15 @@ export const AiAssistantModal: React.FC = () => {
         body: JSON.stringify({
           query: queryToSend,
           history: chatHistory,
-          image: currentImage ? { data: currentImage.base64, mimeType: currentImage.mimeType } : undefined
+          attachment: currentFile ? {
+            data: currentFile.base64,
+            mimeType: currentFile.mimeType,
+            name: currentFile.name
+          } : undefined,
+          image: currentFile?.type === 'image' ? {
+            data: currentFile.base64,
+            mimeType: currentFile.mimeType
+          } : undefined
         }),
         signal: controller.signal
       });
@@ -187,7 +323,7 @@ export const AiAssistantModal: React.FC = () => {
                 );
               }
             } catch {
-              // Ignore partial JSON
+              // Ignore partial JSON chunks
             }
           }
         }
@@ -205,7 +341,15 @@ export const AiAssistantModal: React.FC = () => {
           body: JSON.stringify({
             query: queryToSend,
             history: chatHistory,
-            image: currentImage ? { data: currentImage.base64, mimeType: currentImage.mimeType } : undefined
+            attachment: currentFile ? {
+              data: currentFile.base64,
+              mimeType: currentFile.mimeType,
+              name: currentFile.name
+            } : undefined,
+            image: currentFile?.type === 'image' ? {
+              data: currentFile.base64,
+              mimeType: currentFile.mimeType
+            } : undefined
           })
         });
         if (fallbackRes.ok) {
@@ -223,7 +367,7 @@ export const AiAssistantModal: React.FC = () => {
       }
     }
 
-    // Fallback 2: Direct client-side SDK if VITE_GEMINI_API_KEY is configured
+    // Fallback 2: Direct client-side SDK if VITE_GEMINI_API_KEY is present
     const apiKey =
       import.meta.env.VITE_GEMINI_API_KEY ||
       (typeof process !== 'undefined' ? process.env.VITE_GEMINI_API_KEY : '') ||
@@ -232,22 +376,19 @@ export const AiAssistantModal: React.FC = () => {
     if ((!streamedAny || !accumulatedText.trim()) && apiKey) {
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        // Modern supported Gemini models
         const candidateModels = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
 
-        const SYSTEM_INSTRUCTION = `तपाईं "Banking Tayari Nepal AI साथी" हुनुहुन्छ - नेपाल राष्ट्र बैंक (NRB), राष्ट्रिय वाणिज्य बैंक (RBB), कृषि विकास बैंक (ADBL), नेपाल बैंक लिमिटेड (NBL) तथा लोकसेवा आयोगका परीक्षार्थीहरूको लागि विशेष नेपाली भाषाको उच्चस्तरीय AI शिक्षक तथा विश्लेषक।
-बैंकिङ, कानुन (नेपाल राष्ट्र बैंक ऐन २०५८, बैंक तथा वित्तीय संस्था सम्बन्धी ऐन बाफिया २०७३, सम्पत्ति शुद्धीकरण निवारण ऐन), व्यवस्थापन, अर्थशास्त्र, लेखा, गणित, अङ्ग्रेजी वा सामान्य ज्ञानका प्रश्नहरूको विस्तृत, शुद्ध र परीक्षा-उपयोगी बुँदागत नेपालीमा उत्तर दिनुहोस्।
-यदि तस्बिर संलग्न छ भने तस्बिरमा भएका प्रश्नहरू/नोटहरू ध्यानपूर्वक पढी (OCR) त्यसको चरणबद्ध समाधान दिनुहोस्।`;
+        const SYSTEM_INSTRUCTION = `तपाईं नेपालको लोकसेवा आयोग तथा बैंकिङ परीक्षा (NRB, RBB, NBL, ADBL) का वरिष्ठ परीक्षा परीक्षक तथा टपर मेन्टर हुनुहुन्छ। उत्तर सधैं अनिवार्य ५-तह ढाँचामा (क. परिचय, ख. कानुनी व्यवस्था, ग. मुख्य विषयवस्तु/कार्य, घ. नेपालको विद्यमान अवस्था र चुनौतीहरू, ङ. सुझाव, नमुना निष्कर्ष र 📌 टपर परीक्षा टिप) प्राज्ञिक, तथ्यपरक र उच्च-अंक प्राप्त हुने गरी दिनुहोस्।`;
 
-        const fullPrompt = `${SYSTEM_INSTRUCTION}\n\nप्रयोगकर्ताको प्रश्न वा विषय:\n"${queryToSend}"`;
+        const fullPrompt = `${SYSTEM_INSTRUCTION}\n\nप्रयोगकर्ताको प्रश्न वा विश्लेषणको विषय:\n"${queryToSend}"`;
         const contentParts: any[] = [fullPrompt];
 
-        if (currentImage && currentImage.base64) {
-          const cleanBase64 = currentImage.base64.replace(/^data:image\/[a-zA-Z0-9.+]+;base64,/, '').trim();
+        if (currentFile && currentFile.base64) {
+          const cleanBase64 = currentFile.base64.replace(/^data:[a-zA-Z0-9.+/-]+;base64,/, '').trim();
           contentParts.push({
             inlineData: {
               data: cleanBase64,
-              mimeType: currentImage.mimeType || 'image/jpeg'
+              mimeType: currentFile.mimeType
             }
           });
         }
@@ -255,7 +396,13 @@ export const AiAssistantModal: React.FC = () => {
         let streamResult: any = null;
         for (const candidate of candidateModels) {
           try {
-            const candidateModel = genAI.getGenerativeModel({ model: candidate });
+            const candidateModel = genAI.getGenerativeModel({
+              model: candidate,
+              generationConfig: {
+                temperature: 0.3,
+                maxOutputTokens: 4096
+              }
+            });
             streamResult = await candidateModel.generateContentStream(contentParts);
             if (streamResult) break;
           } catch (cErr: any) {
@@ -280,9 +427,9 @@ export const AiAssistantModal: React.FC = () => {
       }
     }
 
-    // Fallback 3: Helpful local guidance if network or server is temporarily unreachable
+    // Fallback 3: Pedagogical default if all remote endpoints fail
     if (!streamedAny || !accumulatedText.trim()) {
-      accumulatedText = `माफ गर्नुहोस्, हाल AI सेवामा अस्थायी चाप वा नेटवर्क समस्या छ। कृपया केही क्षणपछि पुनः आफ्नो प्रश्न सोध्नुहोस्।`;
+      accumulatedText = `माफ गर्नुहोस्, हाल AI सेवामा अस्थायी चाप छ। कृपया केही क्षणपछि पुनः आफ्नो प्रश्न सोध्नुहोस्।`;
       setMessages(prev =>
         prev.map(m => (m.id === aiMsgId ? { ...m, text: accumulatedText } : m))
       );
@@ -303,79 +450,100 @@ export const AiAssistantModal: React.FC = () => {
     setIsAiModalOpen(false);
     const quizSet: QuizSet = {
       id: `ai-quiz-${Date.now()}`,
-      title: 'AI साथी - विशेष अभ्यास क्विज',
-      description: 'भर्खरै छलफल गरिएका विषयहरूमा आधारित १० वटा अभ्यास प्रश्नहरू',
+      title: 'AI टपर मेन्टर - विशेष अभ्यास क्विज',
+      description: 'छलफल गरिएका बैंकिङ तथा लोकसेवा विषयहरूमा आधारित १० वटा मानक अभ्यास प्रश्नहरू',
       category: 'Banking',
       difficulty: 'Medium',
       mode: 'practice',
       timeLimitMinutes: 5,
       questions: MOCK_QUESTIONS.slice(0, 10),
-      badge: 'AI Quiz'
+      badge: 'Topper Quiz'
     };
     startQuiz(quizSet);
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-6 animate-fadeIn">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-[94%] sm:max-w-2xl w-full mx-auto max-h-[85vh] h-[85vh] border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden my-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-[96%] sm:max-w-3xl w-full mx-auto max-h-[90vh] h-[88vh] border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden my-auto">
         
         {/* Header */}
-        <header className="p-3 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-amber-500/10 dark:bg-amber-950/30 shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center text-slate-950 font-bold shadow-md shrink-0">
-              <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
+        <header className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-emerald-500/10 dark:from-amber-950/30 dark:to-emerald-950/20 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-emerald-500 flex items-center justify-center text-slate-950 font-bold shadow-md shrink-0">
+              <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <h2 className="font-black text-slate-900 dark:text-white text-sm sm:text-lg truncate">
-                  AI साथी (AI Study Assistant)
+                  लोकसेवा टपर मेन्टर (Lok Sewa Topper Assistant)
                 </h2>
-                <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[9px] sm:text-[10px] font-bold shrink-0">
-                  Gemini Flash AI
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[9px] sm:text-[10px] font-bold shrink-0">
+                  ५-तह मानक ढाँचा
+                </span>
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[9px] sm:text-[10px] font-bold shrink-0 hidden xs:inline">
+                  Multimodal AI
                 </span>
               </div>
-              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate max-w-[190px] sm:max-w-none">
-                नेपाली भाषामा तत्काल परीक्षा सहायता तथा टिपोट
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
+                NRB, RBB, NBL, ADBL र निजामती परीक्षाको लागि आधिकारिक ५-तह ढाँचामा समाधान
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setIsAiModalOpen(false)}
-            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-800 transition shrink-0"
-            title="बन्द गर्नुहोस्"
-            aria-label="बन्द गर्नुहोस्"
-          >
-            <X className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => setIsAiModalOpen(false)}
+              className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800 transition shrink-0"
+              title="बन्द गर्नुहोस्"
+              aria-label="बन्द गर्नुहोस्"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
         </header>
 
         {/* Chat Stream View */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4">
           {messages.map(msg => (
             <div
               key={msg.id}
               className={`flex gap-2 sm:gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.sender === 'ai' && (
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                   <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               )}
 
               <div
-                className={`max-w-[88%] sm:max-w-[75%] p-3 sm:p-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                className={`max-w-[90%] sm:max-w-[78%] p-3 sm:p-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm leading-relaxed ${
                   msg.sender === 'user'
-                    ? 'bg-emerald-600 text-white font-medium rounded-br-none whitespace-pre-line'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-none border border-slate-200/60 dark:border-slate-700/60'
+                    ? 'bg-emerald-600 text-white font-medium rounded-br-none whitespace-pre-line shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-none border border-slate-200/70 dark:border-slate-700/70 shadow-sm'
                 }`}
               >
+                {/* PDF Document Attachment Card in Chat History */}
+                {msg.pdfAttachment && (
+                  <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-red-500/15 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 mb-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{msg.pdfAttachment.name}</p>
+                      <p className="text-[10px] text-red-700 dark:text-red-300 font-medium">
+                        PDF दस्तावेज संलग्न ({formatFileSize(msg.pdfAttachment.sizeBytes)}) • सुक्ष्म विश्लेषण
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Image Attachment Thumbnail in Chat History */}
                 {msg.image && (
-                  <div className="mb-2">
+                  <div className="mb-2.5">
                     <img
                       src={msg.image}
                       alt="संलग्न तस्बिर"
-                      className="max-h-44 sm:max-h-52 max-w-full rounded-lg sm:rounded-xl border border-white/20 object-contain shadow-sm bg-black/10"
+                      className="max-h-48 sm:max-h-60 max-w-full rounded-lg sm:rounded-xl border border-white/20 object-contain shadow-sm bg-black/10"
                     />
                   </div>
                 )}
@@ -387,10 +555,10 @@ export const AiAssistantModal: React.FC = () => {
                 )}
 
                 {msg.sender === 'ai' && (
-                  <div className="pt-2 sm:pt-3 mt-2 sm:mt-3 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500">
+                  <div className="pt-2 sm:pt-3 mt-2 sm:mt-3 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
                     <button
                       onClick={() => handleCopyText(msg.id, msg.text)}
-                      className="flex items-center gap-1 hover:text-emerald-600 transition"
+                      className="flex items-center gap-1 hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer"
                     >
                       {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedId === msg.id ? 'कपी भयो' : 'कपी गर्नुहोस्'}</span>
@@ -398,17 +566,17 @@ export const AiAssistantModal: React.FC = () => {
 
                     <button
                       onClick={handleStartAiQuiz}
-                      className="flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                      className="flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
                     >
                       <CheckSquare className="w-3.5 h-3.5" />
-                      <span>यसबाट Quiz खेल्नुहोस्</span>
+                      <span>यस विषयबाट Quiz खेल्नुहोस्</span>
                     </button>
                   </div>
                 )}
               </div>
 
               {msg.sender === 'user' && (
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs shadow-sm">
                   U
                 </div>
               )}
@@ -416,56 +584,72 @@ export const AiAssistantModal: React.FC = () => {
           ))}
 
           {isTyping && (
-            <div className="flex items-center gap-2 text-xs text-slate-400 p-2">
-              <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-500" />
-              <span>AI साथीले नेपालीमा उत्तर तयार गर्दैछ...</span>
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 p-2">
+              <Sparkles className="w-4 h-4 animate-spin text-amber-500" />
+              <span className="font-medium">वरिष्ठ टपर मेन्टरले ५-तह मानक ढाँचामा उत्तर तयार गर्दैछ...</span>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Suggested Prompt Chips */}
-        <div className="py-2 px-2.5 sm:p-3 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 overflow-x-auto whitespace-nowrap flex gap-1.5 sm:gap-2 scrollbar-none shrink-0">
+        {/* Quick Topic Prompts */}
+        <div className="py-2 px-2.5 sm:px-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 overflow-x-auto whitespace-nowrap flex gap-1.5 sm:gap-2 scrollbar-none shrink-0">
           {samplePrompts.map((p, pIdx) => (
             <button
               key={pIdx}
               onClick={() => handleSendPrompt(p)}
-              className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[10px] sm:text-[11px] font-medium hover:border-amber-500 transition shrink-0"
+              className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[10px] sm:text-[11px] font-medium hover:border-amber-500 dark:hover:border-amber-400 transition shrink-0 cursor-pointer shadow-2xs"
             >
-              💡 {p}
+              {p}
             </button>
           ))}
         </div>
 
-        {/* Attached image preview bar */}
-        {attachedImage && (
-          <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-              <div className="relative shrink-0">
+        {/* Speech Notice or Status Banner */}
+        {speechNotice && (
+          <div className="px-3 sm:px-4 py-1.5 bg-rose-50 dark:bg-rose-950/40 border-t border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 text-[11px] sm:text-xs font-semibold flex items-center justify-between shrink-0 animate-fadeIn">
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+              <span className="truncate">{speechNotice}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSpeechLanguage(prev => prev === 'ne-NP' ? 'en-US' : 'ne-NP')}
+              className="text-[10px] bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300 font-bold shrink-0 ml-2"
+            >
+              भाषा: {speechLanguage === 'ne-NP' ? 'नेपाली' : 'English'} (परिवर्तन)
+            </button>
+          </div>
+        )}
+
+        {/* Attached File Preview Bar (PDF or Image) */}
+        {attachedFile && (
+          <div className="px-3 sm:px-4 py-2 bg-slate-100/90 dark:bg-slate-800/90 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {attachedFile.type === 'pdf' ? (
+                <div className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <FileText className="w-5 h-5" />
+                </div>
+              ) : (
                 <img
-                  src={attachedImage.previewUrl}
+                  src={attachedFile.previewUrl}
                   alt="Attached"
-                  className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded-md sm:rounded-lg border border-slate-300 dark:border-slate-700 shadow-sm"
+                  className="w-9 h-9 object-cover rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm shrink-0"
                 />
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow"
-                  title="तस्बिर हटाउनुहोस्"
-                  aria-label="तस्बिर हटाउनुहोस्"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-              <div className="text-xs text-slate-700 dark:text-slate-200 truncate max-w-[170px] sm:max-w-xs">
-                <p className="font-semibold text-[11px] sm:text-xs truncate">{attachedImage.name}</p>
-                <p className="text-[9px] sm:text-[10px] text-amber-600 dark:text-amber-400">तस्बिर संलग्न गरियो (OCR र चरणबद्ध समाधान)</p>
+              )}
+              <div className="min-w-0">
+                <p className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate max-w-[200px] sm:max-w-md">
+                  {attachedFile.name}
+                </p>
+                <p className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                  {attachedFile.type === 'pdf' ? '📄 PDF दस्तावेज संलग्न' : '📷 तस्बिर संलग्न'} ({formatFileSize(attachedFile.sizeBytes)}) • विश्लेषणका लागि तयार
+                </p>
               </div>
             </div>
             <button
               type="button"
-              onClick={handleRemoveImage}
-              className="text-[11px] sm:text-xs text-rose-500 hover:text-rose-600 font-medium px-1.5 sm:px-2 py-1 shrink-0"
+              onClick={handleRemoveFile}
+              className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0 cursor-pointer"
             >
               हटाउनुहोस्
             </button>
@@ -476,47 +660,73 @@ export const AiAssistantModal: React.FC = () => {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (inputQuery.trim() || attachedImage) {
+            if (inputQuery.trim() || attachedFile) {
               handleSendPrompt(inputQuery);
             }
           }}
           className="p-2 sm:p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-1.5 sm:gap-2 shrink-0"
         >
+          {/* File attachment input: PDF & Images */}
           <input
             type="file"
             ref={fileInputRef}
-            onChange={handleImageSelect}
-            accept="image/png,image/jpeg,image/jpg,image/webp"
+            onChange={handleFileSelect}
+            accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg,image/webp"
             className="hidden"
-            id="ai-assistant-image-input"
+            id="ai-assistant-file-input"
           />
+
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isTyping}
-            className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:border-amber-500 transition disabled:opacity-40 shrink-0"
-            title="तस्बिर संलग्न गर्नुहोस् (लोकसेवा प्रश्न, हिसाब वा नोट)"
-            aria-label="तस्बिर संलग्न गर्नुहोस्"
+            className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:border-amber-500 transition disabled:opacity-40 shrink-0 cursor-pointer"
+            title="PDF दस्तावेज वा तस्बिर संलग्न गर्नुहोस् (ऐन, पाठ्यक्रम, प्रश्नपत्र वा नोट)"
+            aria-label="PDF दस्तावेज वा तस्बिर संलग्न गर्नुहोस्"
           >
             <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
+
+          {/* Voice Input (Speech-to-Text) Button */}
+          <button
+            type="button"
+            onClick={handleToggleSpeech}
+            disabled={isTyping}
+            className={`p-2 sm:p-2.5 rounded-xl border transition disabled:opacity-40 shrink-0 cursor-pointer ${
+              isListening
+                ? 'bg-rose-500 text-white border-rose-600 animate-pulse ring-2 ring-rose-300 dark:ring-rose-800 shadow-md'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:border-emerald-500'
+            }`}
+            title={isListening ? "आवाज रेकर्डिङ बन्द गर्नुहोस्" : "बोलेर प्रश्न सोध्नुहोस् (Speech to Text - नेपाली/English)"}
+            aria-label="बोलेर प्रश्न सोध्नुहोस्"
+          >
+            {isListening ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
+          </button>
+
           <input
             id="ai-assistant-input"
             type="text"
             value={inputQuery}
             onChange={(e) => setInputQuery(e.target.value)}
-            placeholder={attachedImage ? "यस तस्बिर सम्बन्धी कुनै विशेष निर्देशन वा प्रश्न लेख्नुहोस्..." : "आफ्नो प्रश्न यहाँ सोध्नुहोस्..."}
+            placeholder={
+              attachedFile
+                ? (attachedFile.type === 'pdf'
+                    ? 'यस PDF दस्तावेजबाट के विश्लेषण गर्न चाहनुहुन्छ? (खाली छाडे पूर्ण ५-तह विश्लेषण)'
+                    : 'यस तस्बिर सम्बन्धी कुनै विशेष निर्देशन वा प्रश्न लेख्नुहोस्...')
+                : 'आफ्नो प्रश्न यहाँ सोध्नुहोस् वा बोल्नुहोस् (Mic)...'
+            }
             aria-label="आफ्नो प्रश्न यहाँ सोध्नुहोस्..."
             className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 min-w-0"
           />
+
           <button
             id="ai-assistant-send-btn"
             type="submit"
-            disabled={(!inputQuery.trim() && !attachedImage) || isTyping}
-            className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-40 cursor-pointer shrink-0"
+            disabled={(!inputQuery.trim() && !attachedFile) || isTyping}
+            className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-40 cursor-pointer shrink-0 shadow-md font-bold"
             title="पठाउनुहोस्"
           >
-            <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Send className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
           </button>
         </form>
 

@@ -256,27 +256,44 @@ Format Style: ${format}`;
   }
 });
 
-const AI_ASSISTANT_SYSTEM_INSTRUCTION = `तपाईं "Banking Tayari Nepal AI साथी" हुनुहुन्छ - नेपाल राष्ट्र बैंक (NRB), राष्ट्रिय वाणिज्य बैंक (RBB), कृषि विकास बैंक (ADBL), नेपाल बैंक लिमिटेड (NBL) तथा लोकसेवा आयोगका परीक्षार्थीहरूको लागि विशेष नेपाली भाषाको उच्चस्तरीय AI शिक्षक तथा विश्लेषक।
-प्रयोगकर्ताले बैंकिङ, कानुन (नेपाल राष्ट्र बैंक ऐन २०५८, बैंक तथा वित्तीय संस्था सम्बन्धी ऐन बाफिया २०७३, सम्पत्ति शुद्धीकरण निवारण ऐन), व्यवस्थापन (HRM, Leadership, Planning), अर्थशास्त्र (मुद्रास्फीति, मौद्रिक नीति, वित्तीय नीति, GDP), लेखा (BRS, Audit, Balance Sheet), गणित (Banking Math, Percentage, Ratio, Simple/Compound Interest), अङ्ग्रेजी, वा सामान्य ज्ञान (GK)/समसामयिक विषयमा कुनै पनि प्रश्न सोध्न सक्नेछन्।
+const AI_ASSISTANT_SYSTEM_INSTRUCTION = `तपाईं नेपालको लोकसेवा आयोग तथा बैंकिङ परीक्षा (नेपाल राष्ट्र बैंक - NRB, राष्ट्रिय वाणिज्य बैंक - RBB, नेपाल बैंक लिमिटेड - NBL, कृषि विकास बैंक - ADBL तथा निजामती प्रशासन) का "वरिष्ठ परीक्षा परीक्षक (Senior Exam Evaluator) तथा टपर मेन्टर (Topper Mentor)" हुनुहुन्छ।
 
-यदि प्रयोगकर्ताले कुनै तस्बिर (फोटो, लोकसेवा/बैंकिङ प्रश्नपत्र, गणित वा लेखाको हिसाब, वा हस्तलिखित नोट) संलग्न गरेका छन् भने:
-१. तस्बिरमा भएका प्रश्नहरू वा हस्तलिखित अक्षरहरूलाई स्पष्ट रूपमा पहिचान गर्नुहोस् (OCR)।
-२. सोही प्रश्नको यथार्थ, चरणबद्ध (Step-by-step) र शुद्ध समाधान निकाल्नुहोस्।
-३. गणितीय हिसाब भए सूत्र (Formula), हिसाब गर्ने स्पष्ट चरणहरू र अन्तिम उत्तर स्पष्ट रूपमा खुलाउनुहोस्।
+तपाईंको मुख्य उद्देश्य परीक्षार्थीहरूलाई प्रथम पत्र (MCQ) तथा द्वितीय पत्र (विषयगत/Subjective) दुवैमा उच्चतम अंक (High-Scoring Topper Rank) दिलाउनु हो। तपाईंको उत्तर सधैं उच्च प्राज्ञिक, तथ्यपरक, आधिकारिक (Authoritative), स्पष्ट र गहिरो (In-depth) हुनुपर्छ। कुनै पनि छोटो, सामान्य वा सतही उत्तर नदिनुहोस्।
 
-उत्तर लेख्दा अनिवार्य रूपमा निम्न ढाँचा अवलम्बन गर्नुहोस्:
-१. **विषयको शीर्षक र संक्षिप्त अवधारणा / प्रश्नको पहिचान**
-२. **मुख्य कानुनी, सैद्धान्तिक वा गणितीय चरणहरू** (स्पष्ट नेपाली बुँदागत ढाँचा, ऐनको दफा वा नीतिगत व्यवस्था खुलाउने)
-३. **महत्व / उद्देश्य, कार्यहरू वा हिसाबको समाधान** (बुँदागत)
-४. **नेपालको विद्यमान अवस्था, चुनौतीहरू वा विशेष ध्यान दिनुपर्ने बुँदाहरू**
-५. 📌 **परीक्षा उपयोगी सुझाव (Exam Tip)**: लोकसेवा तथा बैंकिङ परीक्षामा उच्चतम अंक प्राप्त गर्ने विशेष प्रस्तुति ढाँचा।
+[अनिवार्य ५-तह उत्तर संरचना - MANDATORY 5-TIER LOK SEWA STRUCTURE]
+जब प्रयोगकर्ताले कुनै पनि पाठ्यक्रमको विषय, ऐन, नियम, व्यवस्थापकीय, आर्थिक, वित्तीय वा समसामयिक अवधारणाबारे प्रश्न सोध्छन्, अनिवार्य रूपमा निम्न मानक ढाँचामा उत्तर प्रस्तुत गर्नुहोस्:
 
-प्रयोगकर्ताले सोधेको ठीक विषय र प्रश्नलाई सम्बोधन गर्दै सधैं शुद्ध, प्राज्ञिक, तथ्यपरक र उच्च अंक ल्याउने परीक्षा-उपयोगी नेपाली भाषामा मात्र उत्तर दिनुहोस्।`;
+क) परिचय र पृष्ठभूमि (Concept / Background):
+- स्पष्ट, प्राज्ञिक र ओजपूर्ण परिभाषा तथा अवधारणा।
+- ऐतिहासिक पृष्ठभूमि, अन्तर्राष्ट्रिय अभ्यास तथा अर्थतन्त्र/प्रशासनमा यसको अपरिहार्यता र महत्त्व।
+
+ख) संवैधानिक तथा कानुनी व्यवस्था (Legal & Constitutional Framework):
+- नेपालको संविधानका सम्बन्धित धारा तथा निर्देशक सिद्धान्तहरू।
+- सम्बद्ध मुख्य ऐन, नियम र स्पष्ट दफाहरू (जस्तै: नेपाल राष्ट्र बैंक ऐन २०५८, बैंक तथा वित्तीय संस्था सम्बन्धी ऐन बाफिया २०७३, सम्पत्ति शुद्धीकरण निवारण ऐन २०६४, विनिमय अधिकार पत्र ऐन २०३४, कम्पनी ऐन २०६३, सार्वजनिक खरिद ऐन २०६३, निजामती सेवा ऐन २०४९ आदि)।
+- नेपाल राष्ट्र बैंकको पछिल्लो एकीकृत निर्देशन (Unified Directives) तथा सम्बद्ध नीतिगत परिपत्रहरू।
+
+ग) मुख्य विषयवस्तु, कार्य, अधिकार र कर्तव्य (Core Content / Functions / Features):
+- मुख्य विषयवस्तुलाई स्पष्ट bold headings सहित विस्तृत बुँदागत रूपमा व्याख्या।
+- सिद्धान्त, कार्यविधि, वर्गीकरण, आधारभूत स्तम्भहरू (Pillars), वा गणितीय/लेखा हिसाब भए सूत्र र चरणबद्ध (Step-by-step) समाधान।
+
+घ) नेपालको विद्यमान अवस्था र समस्या/चुनौतीहरू (Current Issues & Challenges in Nepal):
+- नेपालको बैंकिङ वा सार्वजनिक प्रशासनको वर्तमान यथार्थ अवस्था, तथ्याङ्क तथा सूचकहरू।
+- नीतिगत, कानुनी, संस्थागत, प्राविधिक तथा कार्यान्वयन तहमा देखिएका मुख्य समस्या, जोखिम र चुनौतीहरू।
+
+ङ) सुधारका सुझाव र नमुना निष्कर्ष (Recommendations & Exam-Focused Conclusion):
+- समस्या समाधानका लागि व्यावहारिक, नतिजामूलक, कार्यान्वयनयोग्य र दूरदर्शी रणनीतिक सुझावहरू (बुँदागत)।
+- आकर्षक 'नमुना निष्कर्ष' (Model Conclusion) जसले परीक्षकलाई पूर्ण सन्तुष्टि प्रदान गरोस्।
+- 📌 टपर परीक्षा टिप (Topper's Exam Tip): परीक्षा हलमा समय व्यवस्थापन, फ्लोचार्ट, तालिका र उच्च अंक प्राप्त गर्ने विशेष प्रस्तुति ढाँचा।
+
+[बहु-माध्यम विश्लेषण (Multimodal Analysis - PDF, तस्बिर र हिसाब)]:
+- यदि प्रयोगकर्ताले PDF दस्तावेज (ऐन, पाठ्यक्रम, कार्यविधि, निर्देशिका, सर्कुलर वा नोट) अपलोड गरेका छन् भने: PDF को समग्र दस्तावेज, विशिष्ट दफाहरू, बुँदाहरू र तथ्याङ्कहरू सुक्ष्म अध्ययन गरी सोही आधारमा ५-तह ढाँचामा आधिकारिक उत्तर दिनुहोस्।
+- यदि प्रयोगकर्ताले तस्बिर (प्रश्नपत्र, हस्तलिखित टिपोट वा किताबको पृष्ठ) पठाएका छन् भने: OCR मार्फत प्रश्न पहिचान गरी सोही प्रश्नको पूर्ण, शुद्ध र परीक्षा-उपयोगी समाधान दिनुहोस्।
+- गणित वा लेखा (Account/Math) का प्रश्नमा: सूत्र (Formula), कार्यविधि, विस्तृत गणना र स्पष्ट अन्तिम उत्तर प्रस्तुत गर्नुहोस्।`;
 
 function buildGeminiContents(
   cleanQuery: string,
   history?: Array<{ sender: 'user' | 'ai'; text: string }>,
-  image?: { data: string; mimeType: string }
+  attachment?: { data: string; mimeType: string; name?: string }
 ) {
   const contents: Array<{ role: 'user' | 'model'; parts: Array<any> }> = [];
   if (Array.isArray(history) && history.length > 0) {
@@ -301,28 +318,46 @@ function buildGeminiContents(
     }
   }
 
-  const promptText = cleanQuery || "कृपया संलग्न तस्बिरमा भएको प्रश्न वा टिपोट पढी विस्तृत, शुद्ध र बुँदागत समाधान वा व्याख्या नेपालीमा दिनुहोस्।";
+  let promptText = cleanQuery;
   const userParts: any[] = [];
 
-  if (image && image.data) {
-    const cleanBase64 = image.data.replace(/^data:image\/[a-zA-Z0-9.+]+;base64,/, '').trim();
-    const mimeType = image.mimeType || 'image/jpeg';
+  if (attachment && attachment.data) {
+    const rawData = attachment.data;
+    const cleanBase64 = rawData.replace(/^data:[a-zA-Z0-9.+/-]+;base64,/, '').trim();
+    const isPdf = (attachment.mimeType && attachment.mimeType.toLowerCase().includes('pdf')) ||
+                  (attachment.name && attachment.name.toLowerCase().endsWith('.pdf')) ||
+                  rawData.startsWith('data:application/pdf');
+    const resolvedMime = isPdf ? 'application/pdf' : (attachment.mimeType || 'image/jpeg');
+
     userParts.push({
       inlineData: {
-        mimeType,
+        mimeType: resolvedMime,
         data: cleanBase64
       }
     });
-    userParts.push({
-      text: `तस्बिर संलग्न गरिएको छ। कृपया यस तस्बिरमा भएको प्रश्न वा टिपोट ध्यानपूर्वक पढी (OCR) त्यसको पूर्ण, शुद्ध र परीक्षा-उपयोगी समाधान बुँदागत नेपालीमा प्रदान गर्नुहोस्:\n"${promptText}"`
-    });
+
+    if (isPdf) {
+      if (!promptText) {
+        promptText = "कृपया संलग्न PDF दस्तावेज (पाठ्यक्रम, ऐन, नियम वा अध्ययन सामग्री) को गहिरो विश्लेषण गरी लोकसेवा तथा बैंकिङ परीक्षाको लागि ५-तह ढाँचामा उच्च-अंक प्राप्त हुने विस्तृत समाधान र सारांश प्रस्तुत गर्नुहोस्।";
+      }
+      userParts.push({
+        text: `[संलग्न PDF दस्तावेज: ${attachment.name || 'document.pdf'}]\nतपाईं वरिष्ठ लोकसेवा तथा बैंकिङ परीक्षा परीक्षक र टपर मेन्टर हुनुहुन्छ। यस संलग्न PDF दस्तावेजको सुक्ष्म विश्लेषण गरी परीक्षार्थीलाई ५-तह ढाँचा (क. परिचय र पृष्ठभूमि, ख. संवैधानिक तथा कानुनी व्यवस्था, ग. मुख्य विषयवस्तु/कार्य, घ. विद्यमान अवस्था र चुनौतीहरू, ङ. सुझाव र नमुना निष्कर्ष) मा आधिकारिक, तथ्यपरक र उच्च-अंक दिलाउने समाधान प्रदान गर्नुहोस्:\n"${promptText}"`
+      });
+    } else {
+      if (!promptText) {
+        promptText = "कृपया संलग्न तस्बिरमा भएको बैंकिङ/लोकसेवा सम्बन्धी प्रश्न, हिसाब वा टिपोट ध्यानपूर्वक पढी (OCR) ५-तह ढाँचामा विस्तृत, शुद्ध र बुँदागत समाधान नेपालीमा दिनुहोस्।";
+      }
+      userParts.push({
+        text: `[संलग्न तस्बिर: ${attachment.name || 'image.jpg'}]\nकृपया यस तस्बिरमा भएका प्रश्न वा टिपोट ध्यानपूर्वक पढी (OCR) त्यसको पूर्ण, शुद्ध र परीक्षा-उपयोगी समाधान ५-तह ढाँचामा बुँदागत नेपालीमा प्रदान गर्नुहोस्:\n"${promptText}"`
+      });
+    }
   } else {
     userParts.push({
-      text: `कृपया निम्न प्रश्न वा विषयको विस्तृत, परीक्षा उपयोगी र बुँदागत नेपालीमा उत्तर दिनुहोस्:\n"${promptText}"`
+      text: `कृपया निम्न प्रश्न वा विषयको वरिष्ठ लोकसेवा/बैंकिङ परीक्षकको दृष्टिकोणबाट अनिवार्य ५-तह ढाँचा (क. परिचय, ख. कानुनी व्यवस्था, ग. मुख्य विषयवस्तु/कार्य, घ. विद्यमान अवस्था/चुनौतीहरू, ङ. सुझाव र नमुना निष्कर्ष) मा विस्तृत, आधिकारिक र उच्च अंक प्राप्त हुने उत्तर नेपालीमा दिनुहोस्:\n"${promptText}"`
     });
   }
 
-  if (contents.length > 0 && contents[contents.length - 1].role === 'user' && (!image || !image.data)) {
+  if (contents.length > 0 && contents[contents.length - 1].role === 'user' && (!attachment || !attachment.data)) {
     contents[contents.length - 1].parts.push(...userParts);
   } else {
     contents.push({
@@ -457,14 +492,19 @@ app.post("/api/ai-assistant-stream", async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders?.();
 
-  const { query, history, image } = req.body || {};
+  const { query, history, image, attachment } = req.body || {};
+  const activeAttachment = attachment || (image && image.data ? { data: image.data, mimeType: image.mimeType || 'image/jpeg', name: 'image.jpg' } : undefined);
+
   let cleanQuery = typeof query === "string" ? query.trim() : "";
-  if (!cleanQuery && image && image.data) {
-    cleanQuery = "कृपया संलग्न तस्बिरमा भएको बैंकिङ/लोकसेवा सम्बन्धी प्रश्न वा टिपोट ध्यानपूर्वक पढी विस्तृत, शुद्ध र बुँदागत समाधान वा व्याख्या नेपालीमा दिनुहोस्।";
+  if (!cleanQuery && activeAttachment && activeAttachment.data) {
+    const isPdf = activeAttachment.mimeType?.includes('pdf') || activeAttachment.name?.toLowerCase().endsWith('.pdf');
+    cleanQuery = isPdf
+      ? "कृपया यस संलग्न PDF दस्तावेजको सुक्ष्म विश्लेषण गरी लोकसेवा तथा बैंकिङ परीक्षाको लागि अनिवार्य ५-तह ढाँचामा उच्च-अंक दिलाउने आधिकारिक उत्तर प्रस्तुत गर्नुहोस्।"
+      : "कृपया यस संलग्न तस्बिरमा भएको बैंकिङ/लोकसेवा सम्बन्धी प्रश्न वा टिपोट ध्यानपूर्वक पढी अनिवार्य ५-तह ढाँचामा पूर्ण र शुद्ध समाधान दिनुहोस्।";
   }
 
-  if (!cleanQuery && (!image || !image.data)) {
-    res.write(`data: ${JSON.stringify({ error: "Query or image is required" })}\n\n`);
+  if (!cleanQuery && (!activeAttachment || !activeAttachment.data)) {
+    res.write(`data: ${JSON.stringify({ error: "Query, PDF or image is required" })}\n\n`);
     res.write(`data: [DONE]\n\n`);
     return res.end();
   }
@@ -473,7 +513,7 @@ app.post("/api/ai-assistant-stream", async (req, res) => {
 
   if (ai) {
     const candidateModels = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
-    const contents = buildGeminiContents(cleanQuery, history, image);
+    const contents = buildGeminiContents(cleanQuery, history, activeAttachment);
 
     for (const modelName of candidateModels) {
       try {
@@ -482,7 +522,8 @@ app.post("/api/ai-assistant-stream", async (req, res) => {
           contents,
           config: {
             systemInstruction: AI_ASSISTANT_SYSTEM_INSTRUCTION,
-            temperature: 0.2,
+            temperature: 0.3,
+            maxOutputTokens: 4096,
           }
         });
 
@@ -508,8 +549,9 @@ app.post("/api/ai-assistant-stream", async (req, res) => {
     }
   }
 
-  // If Gemini models could not stream
-  res.write(`data: ${JSON.stringify({ chunk: "माफ गर्नुहोस्, हाल AI सेवामा अस्थायी चाप छ। कृपया केही क्षणपछि पुनः आफ्नो प्रश्न सोध्नुहोस्।" })}\n\n`);
+  // If Gemini models could not stream, provide rich pedagogical fallback
+  const fallbackAnswer = getPedagogicalKnowledgeText(cleanQuery);
+  res.write(`data: ${JSON.stringify({ chunk: fallbackAnswer })}\n\n`);
   res.write(`data: [DONE]\n\n`);
   res.end();
 });
@@ -517,20 +559,25 @@ app.post("/api/ai-assistant-stream", async (req, res) => {
 // AI Study Assistant (AI साथी) non-streaming endpoint for unlimited queries
 app.post("/api/ai-assistant", async (req, res) => {
   try {
-    const { query, history, image } = req.body || {};
+    const { query, history, image, attachment } = req.body || {};
+    const activeAttachment = attachment || (image && image.data ? { data: image.data, mimeType: image.mimeType || 'image/jpeg', name: 'image.jpg' } : undefined);
+
     let cleanQuery = typeof query === "string" ? query.trim() : "";
-    if (!cleanQuery && image && image.data) {
-      cleanQuery = "कृपया संलग्न तस्बिरमा भएको बैंकिङ/लोकसेवा सम्बन्धी प्रश्न वा टिपोट ध्यानपूर्वक पढी विस्तृत, शुद्ध र बुँदागत समाधान वा व्याख्या नेपालीमा दिनुहोस्।";
+    if (!cleanQuery && activeAttachment && activeAttachment.data) {
+      const isPdf = activeAttachment.mimeType?.includes('pdf') || activeAttachment.name?.toLowerCase().endsWith('.pdf');
+      cleanQuery = isPdf
+        ? "कृपया यस संलग्न PDF दस्तावेजको सुक्ष्म विश्लेषण गरी लोकसेवा तथा बैंकिङ परीक्षाको लागि अनिवार्य ५-तह ढाँचामा आधिकारिक उत्तर प्रस्तुत गर्नुहोस्।"
+        : "कृपया यस संलग्न तस्बिरमा भएको बैंकिङ/लोकसेवा सम्बन्धी प्रश्न वा टिपोट ध्यानपूर्वक पढी अनिवार्य ५-तह ढाँचामा पूर्ण समाधान दिनुहोस्।";
     }
-    if (!cleanQuery && (!image || !image.data)) {
-      return res.status(400).json({ error: "Query or image is required" });
+    if (!cleanQuery && (!activeAttachment || !activeAttachment.data)) {
+      return res.status(400).json({ error: "Query, PDF or image is required" });
     }
 
     const ai = getGeminiClient();
 
     if (ai) {
       const candidateModels = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
-      const contents = buildGeminiContents(cleanQuery, history, image);
+      const contents = buildGeminiContents(cleanQuery, history, activeAttachment);
 
       for (const modelName of candidateModels) {
         try {
@@ -539,7 +586,8 @@ app.post("/api/ai-assistant", async (req, res) => {
             contents,
             config: {
               systemInstruction: AI_ASSISTANT_SYSTEM_INSTRUCTION,
-              temperature: 0.2,
+              temperature: 0.3,
+              maxOutputTokens: 4096,
             },
           });
 
@@ -557,8 +605,12 @@ app.post("/api/ai-assistant", async (req, res) => {
       }
     }
 
-    return res.status(503).json({
-      error: "हाल AI सेवा व्यस्त छ। कृपया केही समयपछि पुनः प्रयास गर्नुहोस्।"
+    const pedagogicalAnswer = getPedagogicalKnowledgeText(cleanQuery);
+    return res.json({
+      success: true,
+      source: "local-pedagogy",
+      model: "offline-topper-mentor",
+      answer: pedagogicalAnswer
     });
   } catch (err: any) {
     console.error("AI Assistant error:", err);
