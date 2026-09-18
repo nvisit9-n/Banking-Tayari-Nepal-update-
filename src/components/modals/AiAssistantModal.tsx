@@ -453,11 +453,11 @@ export const AiAssistantModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-6 animate-fadeIn">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-[96%] sm:max-w-3xl w-full mx-auto max-h-[90vh] h-[88vh] border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden my-auto">
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 md:p-6 animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 w-full sm:max-w-3xl h-[100dvh] sm:h-[88vh] sm:max-h-[900px] rounded-none sm:rounded-3xl border-0 sm:border sm:border-slate-200 dark:sm:border-slate-800 shadow-2xl flex flex-col overflow-hidden transition-all">
         
         {/* Header */}
-        <header className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-emerald-500/10 dark:from-amber-950/30 dark:to-emerald-950/20 shrink-0">
+        <header className="pt-safe p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-emerald-500/10 dark:from-amber-950/30 dark:to-emerald-950/20 shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-emerald-500 flex items-center justify-center text-slate-950 font-bold shadow-md shrink-0">
               <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -483,11 +483,11 @@ export const AiAssistantModal: React.FC = () => {
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => setIsAiModalOpen(false)}
-              className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800 transition shrink-0"
+              className="min-w-[40px] min-h-[40px] p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 flex items-center justify-center cursor-pointer"
               title="बन्द गर्नुहोस्"
               aria-label="बन्द गर्नुहोस्"
             >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </header>
@@ -654,7 +654,7 @@ export const AiAssistantModal: React.FC = () => {
               handleSendPrompt(inputQuery);
             }
           }}
-          className="p-2 sm:p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-1.5 sm:gap-2 shrink-0"
+          className="p-2 sm:p-3 sm:p-4 pb-safe border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-1.5 sm:gap-2 shrink-0 z-20"
         >
           {/* File attachment input: PDF & Images */}
           <input
@@ -670,11 +670,11 @@ export const AiAssistantModal: React.FC = () => {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isTyping}
-            className="p-2 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:border-amber-500 transition disabled:opacity-40 shrink-0 cursor-pointer"
+            className="w-10 h-10 sm:w-11 sm:h-11 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-amber-500 dark:hover:text-amber-400 hover:border-amber-500 transition disabled:opacity-40 shrink-0 cursor-pointer shadow-2xs"
             title="PDF दस्तावेज वा तस्बिर संलग्न गर्नुहोस् (ऐन, पाठ्यक्रम, प्रश्नपत्र वा नोट)"
             aria-label="PDF दस्तावेज वा तस्बिर संलग्न गर्नुहोस्"
           >
-            <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Paperclip className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
           </button>
 
           {/* Voice Input (Speech-to-Text) Button */}
@@ -682,15 +682,15 @@ export const AiAssistantModal: React.FC = () => {
             type="button"
             onClick={handleToggleSpeech}
             disabled={isTyping}
-            className={`p-2 sm:p-2.5 rounded-xl border transition disabled:opacity-40 shrink-0 cursor-pointer ${
+            className={`w-10 h-10 sm:w-11 sm:h-11 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl border transition disabled:opacity-40 shrink-0 cursor-pointer shadow-2xs ${
               isListening
                 ? 'bg-rose-500 text-white border-rose-600 animate-pulse ring-2 ring-rose-300 dark:ring-rose-800 shadow-md'
-                : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:border-emerald-500'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 hover:border-emerald-500'
             }`}
             title={isListening ? "आवाज रेकर्डिङ बन्द गर्नुहोस्" : "बोलेर प्रश्न सोध्नुहोस् (Speech to Text - नेपाली/English)"}
             aria-label="बोलेर प्रश्न सोध्नुहोस्"
           >
-            {isListening ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
+            {isListening ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />}
           </button>
 
           <input
@@ -701,20 +701,21 @@ export const AiAssistantModal: React.FC = () => {
             placeholder={
               attachedFile
                 ? (attachedFile.type === 'pdf'
-                    ? 'यस PDF दस्तावेजबाट के बुझ्न चाहनुहुन्छ? (खाली छाडे मुख्य सार र विश्लेषण)'
-                    : 'यस तस्बिर सम्बन्धी कुनै विशेष निर्देशन वा प्रश्न लेख्नुहोस्...')
-                : 'आफ्नो प्रश्न यहाँ सोध्नुहोस् वा बोल्नुहोस् (Mic)...'
+                    ? 'यस PDF बारे प्रश्न वा निर्देशन...'
+                    : 'यस तस्बिर सम्बन्धी प्रश्न...')
+                : 'सोध्नुहोस् वा बोल्नुहोस् (Mic)...'
             }
             aria-label="आफ्नो प्रश्न यहाँ सोध्नुहोस्..."
-            className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 min-w-0"
+            className="flex-1 min-w-0 h-10 sm:h-11 px-3 sm:px-4 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-amber-500"
           />
 
           <button
             id="ai-assistant-send-btn"
             type="submit"
             disabled={(!inputQuery.trim() && !attachedFile) || isTyping}
-            className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-40 cursor-pointer shrink-0 shadow-md font-bold"
+            className="w-10 h-10 sm:w-11 sm:h-11 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-40 cursor-pointer shrink-0 shadow-md font-bold"
             title="पठाउनुहोस्"
+            aria-label="पठाउनुहोस्"
           >
             <Send className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
           </button>

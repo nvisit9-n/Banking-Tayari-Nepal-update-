@@ -33,6 +33,7 @@ import { isUserAdmin, OFFICIAL_ADMIN_EMAIL } from '../../utils/sanitizer';
 import { NavigationTab } from '../../types';
 import { DbService } from '../../services/dbService';
 import { StorageService } from '../../services/storageService';
+import { PWAHeaderInstallButton } from '../pwa/PWAInstallPrompt';
 
 // =========================================================================
 // Official Banking Tayari Nepal Inline SVG Component
@@ -294,6 +295,9 @@ export const Header: React.FC = () => {
                 <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
                 <span>AI साथी</span>
               </button>
+
+              {/* Install PWA App Button */}
+              <PWAHeaderInstallButton />
 
               {/* About Us Platform Story Button */}
               <button
